@@ -1,0 +1,33 @@
+<template>
+    <lightning-card>
+        <p class='main-text'>Mark child presence {currentDate}</p>
+        <template if:true={kids.data}>
+            <template for:each={kids.data} for:item="kid">
+                <template if:false={kid.Visits__r}>
+                    <div key={kid.Id} class='button'>
+                        <lightning-button variant="neutral" data-id={kid.Id} ondblclick={markKidArrive}
+                                          label={kid.Name}></lightning-button>
+                    </div>
+                </template>
+
+                <template if:true={kid.Visits__r}>
+                    <template for:each={kid.Visits__r} for:item="visit">
+                        <template if:false={visit.Kid_leave__c}>
+                            <div key={kid.Id} class='button'>
+                                <lightning-button variant="success" data-id={kid.Id} ondblclick={markKidLeft}
+                                                  label={kid.Name}></lightning-button>
+                            </div>
+                        </template>
+
+                        <template if:true={visit.Kid_leave__c}>
+                            <div key={kid.Id} class='button'>
+                                <lightning-button variant="destructive" data-id={kid.Id}
+                                                  label={kid.Name}></lightning-button>
+                            </div>
+                        </template>
+                    </template>
+                </template>
+            </template>
+        </template>
+    </lightning-card>
+</template>
