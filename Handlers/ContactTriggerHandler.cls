@@ -6,7 +6,7 @@ public with sharing class ContactTriggerHandler {
         switch on triggerOperation {
             when BEFORE_INSERT {
                 ContactService.validateDifferentParents(contacts);
-                ContactService.checkGroupSize(contacts);
+                ContactService.validateGroupSize(contacts);
             }
             when BEFORE_UPDATE {
                 ContactService.validateDifferentParents(contacts);
