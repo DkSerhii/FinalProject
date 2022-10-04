@@ -1,24 +1,23 @@
 @IsTest
 private class ContactServiceTest {
+    private static RecordType recTypeKid = RecordTypeSelector.selectKid();
+    private static RecordType recTypeTeacher = RecordTypeSelector.selectTeacher();
+    private static RecordType recTypeParent = RecordTypeSelector.selectParent();
 
     @TestSetup
     private static void setup() {
-        RecordType recTypeKid = [SELECT Id FROM RecordType WHERE Name = 'Kid'];
-        RecordType recTypeTeacher = [SELECT Id FROM RecordType WHERE Name = 'Teacher'];
+        List<Contact> contacts = new List<Contact>();
         Group__c groupWith22kids = new Group__c(Name = 'groupWith22kids');
         insert groupWith22kids;
         insert new Contact(LastName = 'Teacher', Group__c = groupWith22kids.Id, RecordTypeId = recTypeTeacher.Id);
 
-        List<Contact> contacts = new List<Contact>();
 
         for (Integer i = 0; i < 72; i++) {
-            if (i < 25) {
-                Contact kid = new Contact(LastName = 'Kid' + i, RecordTypeId = recTypeKid.Id);
-                contacts.add(kid);
-            }
             if (i < 50) {
-                Contact teacher = new Contact(LastName = 'Teacher' + i, RecordTypeId = recTypeTeacher.Id);
-                contacts.add(teacher);
+                Contact kidWithoutGroup = new Contact(LastName = 'Kid' + i, RecordTypeId = recTypeKid.Id);
+                contacts.add(kidWithoutGroup);
+                Contact teacherWithoutGroup = new Contact(LastName = 'Teacher' + i, RecordTypeId = recTypeTeacher.Id);
+                contacts.add(teacherWithoutGroup);
             } else {
                 Contact kidWithGroup = new Contact(LastName = 'Kid' + i, Group__c = groupWith22kids.Id,
                         RecordTypeId = recTypeKid.Id);
@@ -30,9 +29,7 @@ private class ContactServiceTest {
 
     @IsTest
     private static void validateDifferentParents() {
-        RecordType recTypeKid = [SELECT Id FROM RecordType WHERE Name = 'Kid'];
-        RecordType recordTypeParent = [SELECT Id FROM RecordType WHERE Name = 'Parent'];
-        Contact parent = new Contact(LastName = 'parent', RecordTypeId = recordTypeParent.Id);
+        Contact parent = new Contact(LastName = 'parent', RecordTypeId = recTypeParent.Id);
         insert parent;
         Contact kidToInsert = new Contact(LastName = 'Kid', First_Parent__c = parent.Id, RecordTypeId = recTypeKid.Id);
         Contact kidToUpdate = new Contact(LastName = 'Kid', First_Parent__c = parent.Id, RecordTypeId = recTypeKid.Id);
@@ -63,54 +60,102 @@ private class ContactServiceTest {
     }
 
     @IsTest
-    private static void checkGroupChange() {
+    private static void insertKidsWhenFullGroup() {
         Group__c fullGroup = [SELECT Id FROM Group__c];
-        List<DmlException> dmlErrors = new List<DmlException>();
-        Integer contactCount = [SELECT Count() FROM Contact WHERE Group__c = NULL];
+        DmlException insertError;
+
+        List<Contact> kids = new List<Contact>();
+        Integer recordsQuantity = 50;
 
         Test.startTest();
-        List<Contact> contacts = [SELECT Id FROM Contact WHERE Group__c = NULL];
-        for (Contact con : contacts) {
-            con.Group__c = fullGroup.Id;
+        for (Integer i = 0; i < recordsQuantity; i++) {
+            kids.add(new Contact(LastName = 'kid' + i, RecordTypeId = recTypeKid.Id, Group__c = fullGroup.Id));
         }
         try {
-            update contacts;
+            insert kids;
         } catch (DmlException dmlError) {
-            dmlErrors.add(dmlError);
+            insertError = dmlError;
         }
         Test.stopTest();
 
-        System.assertNotEquals(contactCount, dmlErrors.size(), 'There must be' + contactCount + 'errors');
+        System.assertNotEquals(null, insertError, 'There should be an error');
     }
 
     @IsTest
-    private static void checkGroupSize() {
-        RecordType recTypeKid = [SELECT Id FROM RecordType WHERE Name = 'Kid'];
-        RecordType recTypeTeacher = [SELECT Id FROM RecordType WHERE Name = 'Teacher'];
-        Group__c groupWith22Kids = [SELECT Id From Group__c];
+    private static void updateKidsWhenFullGroup() {
+        Group__c fullGroup = [SELECT Id FROM Group__c];
+        DmlException updateError;
 
-        List<Contact> contacts = new List<Contact>();
-        List<DmlException> dmlErrors = new List<DmlException>();
-        Integer recordsQuantity = 50;
-
-        for (Integer i = 0; i < recordsQuantity; i++) {
-            Contact con = new Contact(LastName = 'Contact' + i, Group__c = groupWith22Kids.Id);
-            if (i < 25) {
-                con.RecordTypeId = recTypeKid.Id;
-            } else {
-                con.RecordTypeId = recTypeTeacher.Id;
-            }
-            contacts.add(con);
-        }
+        List<Contact> kidsWithoutGroup = [
+                SELECT Id
+                FROM Contact
+                WHERE RecordTypeId = :recTypeKid.Id
+                AND Group__c = NULL
+        ];
+        List<Contact> kidsWithGroup = new List<Contact>();
 
         Test.startTest();
+        for (Contact con : kidsWithoutGroup) {
+            con.Group__c = fullGroup.Id;
+            kidsWithGroup.add(con);
+        }
         try {
-            insert contacts;
+            update kidsWithGroup;
         } catch (DmlException dmlError) {
-            dmlErrors.add(dmlError);
+            updateError = dmlError;
         }
         Test.stopTest();
 
-        System.assertNotEquals(recordsQuantity, dmlErrors.size(), 'There must be' + recordsQuantity + 'errors');
+        System.assertNotEquals(null, updateError, 'There should be an error');
+    }
+
+    @IsTest
+    private static void insertTeachersWhenFullGroup() {
+        Group__c fullGroup = [SELECT Id FROM Group__c];
+        DmlException insertError;
+
+        List<Contact> kids = new List<Contact>();
+        Integer recordsQuantity = 50;
+
+        Test.startTest();
+        for (Integer i = 0; i < recordsQuantity; i++) {
+            kids.add(new Contact(LastName = 'kid' + i, RecordTypeId = recTypeTeacher.Id, Group__c = fullGroup.Id));
+        }
+        try {
+            insert kids;
+        } catch (DmlException dmlError) {
+            insertError = dmlError;
+        }
+        Test.stopTest();
+
+        System.assertNotEquals(null, insertError, 'There should be an error');
+    }
+
+    @IsTest
+    private static void updateTeachersWhenFullGroup() {
+        Group__c fullGroup = [SELECT Id FROM Group__c];
+        DmlException updateError;
+
+        List<Contact> kidsWithoutGroup = [
+                SELECT Id
+                FROM Contact
+                WHERE RecordTypeId = :recTypeTeacher.Id
+                AND Group__c = NULL
+        ];
+        List<Contact> kidsWithGroup = new List<Contact>();
+
+        Test.startTest();
+        for (Contact con : kidsWithoutGroup) {
+            con.Group__c = fullGroup.Id;
+            kidsWithGroup.add(con);
+        }
+        try {
+            update kidsWithGroup;
+        } catch (DmlException dmlError) {
+            updateError = dmlError;
+        }
+        Test.stopTest();
+
+        System.assertNotEquals(null, updateError, 'There should be an error');
     }
 }

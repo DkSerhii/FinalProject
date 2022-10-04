@@ -3,8 +3,14 @@ import getKidsByTeacherId from '@salesforce/apex/ContactController.getKidsByTeac
 import createVisitByKidId from '@salesforce/apex/VisitController.createVisitByKidId';
 import updateKidLeft from '@salesforce/apex/VisitController.updateKidLeft';
 import {refreshApex} from "@salesforce/apex";
+import HideLightningHeader from '@salesforce/resourceUrl/NoHeader';
+import { loadStyle, loadScript } from 'lightning/platformResourceLoader';
 
 export default class ArrivingTable extends LightningElement {
+
+    connectedCallback() {
+        loadStyle(this, HideLightningHeader)
+    }
 
     @wire(getKidsByTeacherId)
     kids;

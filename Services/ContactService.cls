@@ -30,8 +30,8 @@ public with sharing class ContactService {
     }
 
     public static void validateGroupSize(List<Contact> contacts) {
-        RecordType recTypeKid = [SELECT Id FROM RecordType WHERE Name = 'Kid'];
-        RecordType recTypeTeacher = [SELECT Id FROM RecordType WHERE Name = 'Teacher'];
+        RecordType recTypeKid = RecordTypeSelector.selectKid();
+        RecordType recTypeTeacher = RecordTypeSelector.selectTeacher();
         List<Contact> kids = new List<Contact>();
         List<Contact> teachers = new List<Contact>();
 
@@ -46,20 +46,19 @@ public with sharing class ContactService {
             }
         }
         if (!kids.isEmpty()) {
-            String validateRule = 'Kids';
             Map<Id, Group__c> groupsByIds =
                     new Map<ID, Group__c>(GroupSelector.getAllGroupsWithContacts(recTypeKid.Id));
-            checkGroupSize(kids, groupsByIds, validateRule);
+            checkGroupSize(kids, groupsByIds, 22, 'kids');
         }
         if (!teachers.isEmpty()) {
-            String validateRule = 'Teachers';
             Map<Id, Group__c> groupsByIds =
                     new Map<ID, Group__c>(GroupSelector.getAllGroupsWithContacts(recTypeTeacher.Id));
-            checkGroupSize(kids, groupsByIds, validateRule);
+            checkGroupSize(teachers, groupsByIds, 1, 'teacher');
         }
     }
 
-    public static void checkGroupSize(List<Contact> contacts, Map<Id, Group__c> groupsByIds, String validateRule) {
+    public static void checkGroupSize(List<Contact> contacts, Map<Id, Group__c> groupsByIds,
+            Integer allowableGroupSize, String groupRole) {
         Map<Id, Integer> groupSizeById = new Map<Id, Integer>();
 
         for (Contact con : contacts) {
@@ -68,27 +67,16 @@ public with sharing class ContactService {
 
             if (groupSize == null) {
                 groupSize = contactsGroup.Contacts__r.size();
-                groupSize++;
-                groupSizeById.put(contactsGroup.Id, groupSize);
-                errorCheck(con, groupSize, validateRule);
-            } else {
-                groupSize++;
-                groupSizeById.put(contactsGroup.Id, groupSize);
-                errorCheck(con, groupSize, validateRule);
             }
+            groupSize++;
+            groupSizeById.put(contactsGroup.Id, groupSize);
+            errorCheck(con, groupSize, allowableGroupSize, groupRole);
         }
     }
 
-    public static void errorCheck(Contact con, Integer groupSize, String validateRule) {
-        if (validateRule == 'Kids') {
-            if (groupSize > 22) {
-                con.addError('Max size of group is 22 kids');
-            }
-        }
-        if (validateRule == 'Teachers') {
-            if (groupSize > 1) {
-                con.addError('Only one teacher in group');
-            }
+    public static void errorCheck(Contact con, Integer groupSize, Integer allowableGroupSize, String groupRole) {
+        if (groupSize > allowableGroupSize) {
+            con.addError('Max size of group is ' + allowableGroupSize + ' ' + groupRole);
         }
     }
 }
