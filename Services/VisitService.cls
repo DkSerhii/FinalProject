@@ -7,11 +7,7 @@ public class VisitService {
             visitById.put(visit.Contact__c, visit);
         }
 
-        List<Visit__c> existingVisits = [
-                SELECT Contact__c
-                FROM Visit__c
-                WHERE Contact__c = :visitById.keySet() AND Visit_Date__c = TODAY
-        ];
+        List<Visit__c> existingVisits = VisitSelector.selectTodayVisits(visitById);
 
         if (existingVisits != null) {
             for (Visit__c visit : existingVisits) {
