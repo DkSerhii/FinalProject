@@ -9,7 +9,7 @@ public with sharing class ContactTriggerHandler {
                 ContactService.validateGroupSize(contacts);
             }
             when BEFORE_UPDATE {
-                ContactService.validateDifferentParents(contacts);
+                ContactService.checkParentsChange(contacts, contactsByIds);
                 ContactService.checkGroupChange(contacts, contactsByIds);
             }
         }

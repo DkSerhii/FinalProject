@@ -2,10 +2,29 @@ public with sharing class ContactService {
 
     public static void validateDifferentParents(List<Contact> contacts) {
         for (Contact con : contacts) {
-            if (con.First_Parent__c != null && con.Second_Parent__c != null) {
+            if (fieldsNotEmpty(con)) {
                 checkParents(con);
             }
         }
+    }
+
+    public static void checkParentsChange(List<Contact> contacts, Map<Id, Contact> contactsByIds) {
+        for (Contact newContact : contacts) {
+            Contact oldContact = contactsByIds.get(newContact.Id);
+
+            if (newContact.First_Parent__c != oldContact.First_Parent__c ||
+                    newContact.Second_Parent__c != oldContact.Second_Parent__c && fieldsNotEmpty(newContact)) {
+                checkParents(newContact);
+            }
+        }
+    }
+
+    private static Boolean fieldsNotEmpty(Contact con) {
+        Boolean fieldsNotEmpty = false;
+        if (con.First_Parent__c != null && con.Second_Parent__c != null) {
+            fieldsNotEmpty = true;
+        }
+        return fieldsNotEmpty;
     }
 
     public static void checkParents(Contact con) {
